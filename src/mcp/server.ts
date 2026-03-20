@@ -31,12 +31,13 @@ export async function createMcpServer() {
         title: 'Search Views',
         description: 'Search view names in the ArchiMate model',
         inputSchema: { 
-          query: z.string().optional().describe('Search keyword to filter view names') 
+          query: z.string().optional().describe('Search keyword to filter view names'),
+          format: z.enum(['markdown', 'yaml', 'json']).optional().describe('Response format (default: markdown)')
         },
       },
-      async (args: { query?: string }) => {
-        const out = await tools.searchViewsHandler({ query: args?.query });
-        return { content: [{ type: 'text', text: out.markdown }], structuredContent: out };
+      async (args: { query?: string; format?: 'markdown' | 'yaml' | 'json' }) => {
+        const out = await tools.searchViewsHandler({ query: args?.query, format: args?.format });
+        return { content: [{ type: 'text', text: out.content }], structuredContent: out };
       }
     );
     console.info('MCP: registered tool: SearchViews');
@@ -47,14 +48,15 @@ export async function createMcpServer() {
       'GetViewDetails',
       {
         title: 'Get View Details',
-        description: 'Get detailed markdown for a named view in the ArchiMate model',
+        description: 'Get detailed information for a named view in the ArchiMate model',
         inputSchema: { 
-          viewname: z.string().describe('The exact name of the view to retrieve details for') 
+          viewname: z.string().describe('The exact name of the view to retrieve details for'),
+          format: z.enum(['markdown', 'yaml', 'json']).optional().describe('Response format (default: markdown)')
         },
       },
-      async (args: { viewname: string }) => {
-        const out = await tools.getViewDetailsHandler({ viewname: args.viewname });
-        return { content: [{ type: 'text', text: out.markdown }], structuredContent: out };
+      async (args: { viewname: string; format?: 'markdown' | 'yaml' | 'json' }) => {
+        const out = await tools.getViewDetailsHandler({ viewname: args.viewname, format: args?.format });
+        return { content: [{ type: 'text', text: out.content }], structuredContent: out };
       }
     );
     console.info('MCP: registered tool: GetViewDetails');
@@ -68,12 +70,13 @@ export async function createMcpServer() {
         description: 'Search elements in the ArchiMate model by name, type, or documentation',
         inputSchema: { 
           query: z.string().optional().describe('Search keyword to filter element names, documentation, and properties'),
-          type: z.string().optional().describe('Filter elements by type')
+          type: z.string().optional().describe('Filter elements by type'),
+          format: z.enum(['markdown', 'yaml', 'json']).optional().describe('Response format (default: markdown)')
         },
       },
-      async (args: { query?: string, type?: string }) => {
-        const out = await tools.searchElementsHandler({ query: args?.query, type: args?.type });
-        return { content: [{ type: 'text', text: out.markdown }], structuredContent: out };
+      async (args: { query?: string, type?: string, format?: 'markdown' | 'yaml' | 'json' }) => {
+        const out = await tools.searchElementsHandler({ query: args?.query, type: args?.type, format: args?.format });
+        return { content: [{ type: 'text', text: out.content }], structuredContent: out };
       }
     );
     console.info('MCP: registered tool: SearchElements');
@@ -84,14 +87,15 @@ export async function createMcpServer() {
       'GetElementDetails',
       {
         title: 'Get Element Details',
-        description: 'Get detailed markdown for a named element in the ArchiMate model',
+        description: 'Get detailed information for a named element in the ArchiMate model',
         inputSchema: { 
-          elementname: z.string().describe('The name of the element to retrieve details for') 
+          elementname: z.string().describe('The name of the element to retrieve details for'),
+          format: z.enum(['markdown', 'yaml', 'json']).optional().describe('Response format (default: markdown)')
         },
       },
-      async (args: { elementname: string }) => {
-        const out = await tools.getElementDetailsHandler({ elementname: args.elementname });
-        return { content: [{ type: 'text', text: out.markdown }], structuredContent: out };
+      async (args: { elementname: string; format?: 'markdown' | 'yaml' | 'json' }) => {
+        const out = await tools.getElementDetailsHandler({ elementname: args.elementname, format: args?.format });
+        return { content: [{ type: 'text', text: out.content }], structuredContent: out };
       }
     );
     console.info('MCP: registered tool: GetElementDetails');

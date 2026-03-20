@@ -1,6 +1,6 @@
 # ArchiScribe MCP Server
 
-The **ArchiScribe MCP Server** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/docs/getting-started/intro) server designed to retrieve architectural information from an ArchiMate model. It enables AI coding assistants and agents to access architectural context information during the software development lifecycle (SDLC). The information is returned in markdown format, which is easily understood by LLMs.
+The **ArchiScribe MCP Server** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/docs/getting-started/intro) server designed to retrieve architectural information from an ArchiMate model. It enables AI coding assistants and agents to access architectural context information during the software development lifecycle (SDLC). The information is returned in markdown, JSON, or YAML format, which are easily understood by LLMs.
 
 More details here: [https://declanbright.com/software/archiscribe-mcp-server/](https://declanbright.com/software/archiscribe-mcp-server/)
 
@@ -99,29 +99,30 @@ Supports MCP over HTTP at the `/mcp` endpoint for integration with MCP clients.
 
 ## MCP Tools
 
-The server exposes four MCP tools:
+The server exposes four MCP tools. All tools accept an optional `format` parameter (`markdown`, `yaml`, or `json`) to override the configured response format on a per-call basis.
 
 ### SearchViews
 
-- **Input**: `query` (optional string) — keyword to search for view names
-- **Output**: Markdown list of matching views
+- **Input**: `query` (optional string) — keyword to search for view names; `format` (optional) — response format
+- **Output**: List of matching views
 
 ### GetViewDetails
 
-- **Input**: `viewname` (required string) — exact name of the view
-- **Output**: Markdown document with metadata, elements, and relationships
+- **Input**: `viewname` (required string) — exact name of the view; `format` (optional) — response format
+- **Output**: Document with metadata, elements, and relationships
 
 ### SearchElements
 
 - **Input**:
   - `query` (optional string) — keyword to search element names, documentation, and properties
   - `type` (optional string) — filter elements by ArchiMate type (e.g., "ApplicationComponent", "SystemSoftware")
-- **Output**: Markdown list of matching elements with their types
+  - `format` (optional) — response format
+- **Output**: List of matching elements with their types
 
 ### GetElementDetails
 
-- **Input**: `elementname` (required string) — name of the element to retrieve
-- **Output**: Markdown document with element metadata, properties, referenced views, and relationships
+- **Input**: `elementname` (required string) — name of the element to retrieve; `format` (optional) — response format
+- **Output**: Document with element metadata, properties, referenced views, and relationships
 
 ---
 
@@ -185,22 +186,64 @@ Config file: `config/settings.json`
 
 ---
 
+## Response Format
+
+All responses can be returned in **markdown** (default), **json**, or **yaml** format.
+
+The format is resolved in the following priority order:
+
+1. **Per-call `format` parameter** — passed directly to an MCP tool (e.g., `{ "format": "json" }`)
+2. **`X-Response-Format` header** — set by the MCP client (see below)
+3. **`responseFormat` setting** — in `config/settings.json`
+4. **Default** — `markdown`
+
+### Config file
+
+```json
+{
+  "responseFormat": "yaml"
+}
+```
+
+Or via environment variable:
+
+```powershell
+$env:RESPONSE_FORMAT='json'; npm start
+```
+
+### MCP client header
+
+Some MCP clients allow setting custom request headers. Use the `X-Response-Format` header to override the format from the client configuration:
+
+```json
+"archiscribe": {
+  "url": "http://localhost:3030/mcp",
+  "type": "http",
+  "headers": {
+    "X-Response-Format": "yaml"
+  }
+}
+```
+
+---
+
 ## HTTP Test API
 
-Quick testing via HTTP endpoints (disabled by default, see advanced configuration):
+Quick testing via HTTP endpoints (disabled by default, see advanced configuration).
 
-- GET `/views?query=<keyword>`
-  - Returns a markdown list of view names matching the keyword.
+All HTTP endpoints support an optional `?format=` query parameter (`markdown`, `yaml`, or `json`). The `Content-Type` header is set automatically based on the effective format.
 
-- GET `/views/{viewname}`
-  - Returns detailed markdown for the specified view.
+- GET `/views?query=<keyword>&format=<format>`
+  - Returns a list of view names matching the keyword.
 
-- GET `/elements?query=<keyword>&type=<type>`
-  - Returns a markdown list of elements matching the keyword and/or type.
-  - Both query and type parameters are optional.
+- GET `/views/{viewname}?format=<format>`
+  - Returns detailed output for the specified view.
 
-- GET `/elements/{elementname}`
-  - Returns detailed markdown for the specified element.
+- GET `/elements?query=<keyword>&type=<type>&format=<format>`
+  - Returns a list of elements matching the keyword and/or type.
+
+- GET `/elements/{elementname}?format=<format>`
+  - Returns detailed output for the specified element.
 
 ---
 

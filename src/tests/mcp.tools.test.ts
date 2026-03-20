@@ -7,16 +7,16 @@ describe('MCP tools', () => {
     const modelPath = join(__dirname, '..', '..', 'data', 'archimate-scribe-demo-model.xml');
     const tools = createTools(modelPath);
     const result = await tools.searchViewsHandler({ query: 'dataflow' });
-    expect(result.markdown).toContain('Dataflow');
-    expect(result.markdown).toContain('Views');
+    expect(result.content).toContain('Dataflow');
+    expect(result.content).toContain('Views');
   });
 
   it('getViewDetailsHandler returns view markdown', async () => {
     const modelPath = join(__dirname, '..', '..', 'data', 'archimate-scribe-demo-model.xml');
     const tools = createTools(modelPath);
     const result = await tools.getViewDetailsHandler({ viewname: 'Dataflow View' });
-    expect(result.markdown).toContain('ArchiMate View name: Dataflow View');
-    expect(result.markdown).toContain('Elements');
+    expect(result.content).toContain('ArchiMate View name: Dataflow View');
+    expect(result.content).toContain('Elements');
     expect(result.id).toBeTypeOf('string');
     expect(result.id && result.id.length).toBeGreaterThan(0);
   });
@@ -27,12 +27,12 @@ describe('MCP tools', () => {
     
     // Test searching by name
     const nameResult = await tools.searchElementsHandler({ query: 'core' });
-    expect(nameResult.markdown).toContain('Elements');
-    expect(nameResult.markdown).toContain('Core');
+    expect(nameResult.content).toContain('Elements');
+    expect(nameResult.content).toContain('Core');
     
     // Test searching by type
     const typeResult = await tools.searchElementsHandler({ type: 'ApplicationComponent' });
-    expect(typeResult.markdown).toContain('ApplicationComponent');
+    expect(typeResult.content).toContain('ApplicationComponent');
   });
 
   it('getElementDetailsHandler returns element markdown', async () => {
@@ -40,8 +40,8 @@ describe('MCP tools', () => {
     const tools = createTools(modelPath);
     
     const result = await tools.getElementDetailsHandler({ elementname: 'RDBMS' });
-    expect(result.markdown).toContain('ArchiMate Element:');
-    expect(result.markdown).toContain('RDBMS');
+    expect(result.content).toContain('ArchiMate Element:');
+    expect(result.content).toContain('RDBMS');
     expect(result.id).toBeTypeOf('string');
     expect(result.id && result.id.length).toBeGreaterThan(0);
   });

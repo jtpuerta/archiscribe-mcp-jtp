@@ -1,4 +1,15 @@
 import { ViewObject, ElementObject, RelationshipObject, ModelData } from '../model/types';
+import { ResponseFormatter } from './types';
+
+// --- Markdown Rendering Functions ---
+
+function findElementById(model: ModelData, id: string): ElementObject | undefined {
+  return model.elements.find(e => e.id === id);
+}
+
+function findRelationshipById(model: ModelData, id: string): RelationshipObject | undefined {
+  return model.relationships.find(r => r.id === id);
+}
 
 export function renderViewListMarkdown(views: ViewObject[]): string {
   if (!views || views.length === 0) return '# Views\n\n_No views found_';
@@ -7,14 +18,6 @@ export function renderViewListMarkdown(views: ViewObject[]): string {
     lines.push(`- ${v.name}`);
   }
   return lines.join('\n');
-}
-
-function findElementById(model: ModelData, id: string): ElementObject | undefined {
-  return model.elements.find(e => e.id === id);
-}
-
-function findRelationshipById(model: ModelData, id: string) : RelationshipObject | undefined {
-  return model.relationships.find(r => r.id === id);
 }
 
 export function renderViewDetailsMarkdownFromModel(model: ModelData, view: ViewObject): string {
@@ -46,7 +49,7 @@ export function renderViewDetailsMarkdownFromModel(model: ModelData, view: ViewO
   }
 
   lines.push('## Relationships', '');
-  
+
   // Collect explicit relationships
   const explicitRels: string[] = [];
   if (view.relationships && view.relationships.length > 0) {
@@ -77,13 +80,13 @@ export function renderViewDetailsMarkdownFromModel(model: ModelData, view: ViewO
       const child = findElementById(model, hierarchy.childElement);
       const parentName = parent ? parent.name : hierarchy.parentElement;
       const childName = child ? child.name : hierarchy.childElement;
-      
+
       // Find any relationship between the two elements (first match)
-      const implicitRel = model.relationships.find(r => 
+      const implicitRel = model.relationships.find(r =>
         (r.sourceId === hierarchy.parentElement && r.targetId === hierarchy.childElement) ||
         (r.sourceId === hierarchy.childElement && r.targetId === hierarchy.parentElement)
       );
-      
+
       implicitRels.push(`- From **${parentName}** to **${childName}**`);
       if (implicitRel) {
         implicitRels.push(`  - Type: ${implicitRel.type} (implicit from view nesting)`);
@@ -117,7 +120,7 @@ export function renderViewDetailsMarkdownFromModel(model: ModelData, view: ViewO
 
 export function renderElementListMarkdown(elements: ElementObject[]): string {
   if (!elements || elements.length === 0) return '# Elements\n\n_No elements found_';
-  
+
   const lines: string[] = ['# ArchiMate Elements', ''];
   for (const el of elements) {
     lines.push(`- ${el.name} (${el.type || 'Unknown Type'})`);
@@ -128,7 +131,7 @@ export function renderElementListMarkdown(elements: ElementObject[]): string {
 export function renderElementDetailsMarkdownFromModel(model: ModelData, element: ElementObject): string {
   const lines: string[] = [];
   lines.push(`# ArchiMate Element: ${element.name}`, '');
-  
+
   if (element.type) lines.push(`**Type:** ${element.type}`, '');
   if (element.documentation) lines.push(element.documentation, '');
 
@@ -159,7 +162,7 @@ export function renderElementDetailsMarkdownFromModel(model: ModelData, element:
 
   if (outgoing.length > 0 || incoming.length > 0) {
     lines.push('## Relationships', '');
-    
+
     if (outgoing.length > 0) {
       lines.push('### Outgoing Relationships', '');
       for (const rel of outgoing) {
@@ -188,4 +191,31 @@ export function renderElementDetailsMarkdownFromModel(model: ModelData, element:
   }
 
   return lines.join('\n');
+}
+
+// --- Formatter ---
+
+function prependDisclaimer(content: string, disclaimer?: string): string {
+  if (!disclaimer) return content;
+  return content.startsWith(disclaimer) ? content : disclaimer + content;
+}
+
+export class MarkdownFormatter implements ResponseFormatter {
+  readonly contentType = 'text/markdown';
+
+  formatViewList(views: ViewObject[], disclaimer?: string): string {
+    return prependDisclaimer(renderViewListMarkdown(views), disclaimer);
+  }
+
+  formatViewDetails(model: ModelData, view: ViewObject, disclaimer?: string): string {
+    return prependDisclaimer(renderViewDetailsMarkdownFromModel(model, view), disclaimer);
+  }
+
+  formatElementList(elements: ElementObject[], disclaimer?: string): string {
+    return prependDisclaimer(renderElementListMarkdown(elements), disclaimer);
+  }
+
+  formatElementDetails(model: ModelData, element: ElementObject, disclaimer?: string): string {
+    return prependDisclaimer(renderElementDetailsMarkdownFromModel(model, element), disclaimer);
+  }
 }

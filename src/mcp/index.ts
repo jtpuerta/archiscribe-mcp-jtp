@@ -4,6 +4,10 @@ import { createMcpServer } from './server';
 import { appService } from '../services/app';
 import { createJsonRpcError, handleMcpError } from '../utils/errors';
 import { getLogger } from '../utils/logger';
+import { requestContext } from '../utils/requestContext';
+import { ResponseFormat } from '../config';
+
+const VALID_FORMATS: ResponseFormat[] = ['markdown', 'yaml', 'json'];
 
 const logger = getLogger();
 
@@ -45,9 +49,18 @@ async function handleMcpRequest(mcp: any, req: any, res: any): Promise<void> {
     try { transport.close(); } catch (_) { /* ignore */ }
   });
 
-  // Connect and handle the request
-  await mcp.sdkServer.connect(transport);
-  await transport.handleRequest(req as any, res as any, body);
+  // Resolve format from X-Response-Format header
+  const headerValue = req.headers['x-response-format'];
+  const headerFormat: ResponseFormat | undefined =
+    typeof headerValue === 'string' && VALID_FORMATS.includes(headerValue as ResponseFormat)
+      ? headerValue as ResponseFormat
+      : undefined;
+
+  // Connect and handle the request within the request context so tool handlers can read the format
+  await requestContext.run({ responseFormat: headerFormat }, async () => {
+    await mcp.sdkServer.connect(transport);
+    await transport.handleRequest(req as any, res as any, body);
+  });
 }
 
 async function main() {

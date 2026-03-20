@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
+export type ResponseFormat = 'markdown' | 'yaml' | 'json';
+
 export interface Config {
   modelPath: string;
   viewsFilterByProperty: boolean;
@@ -10,6 +12,7 @@ export interface Config {
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   disclaimerPrefix?: string;
   enableHttpEndpoints?: boolean;
+  responseFormat: ResponseFormat;
 }
 
 function readSettings(): Partial<Config> {
@@ -39,6 +42,7 @@ export function loadConfig(): Config {
     enableHttpEndpoints: (process.env.ENABLE_HTTP_ENDPOINTS || String((defaults as any).enableHttpEndpoints || 'false')) === 'true',
     logPath: process.env.LOG_PATH || (defaults as any).logPath || 'logs',
     logLevel: (process.env.LOG_LEVEL as any) || (defaults as any).logLevel || 'info',
-    disclaimerPrefix: process.env.DISCLAIMER_PREFIX || (defaults as any).disclaimerPrefix || ''
+    disclaimerPrefix: process.env.DISCLAIMER_PREFIX || (defaults as any).disclaimerPrefix || '',
+    responseFormat: (process.env.RESPONSE_FORMAT as ResponseFormat) || (defaults as any).responseFormat || 'markdown'
   };
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ModelLoader } from '../../src/model/loader';
-import { renderViewDetailsMarkdownFromModel } from '../../src/renderer';
+import { renderViewDetailsMarkdownFromModel } from '../../src/renderer/markdownFormatter';
 import { join } from 'path';
 
 describe('Renderer', () => {

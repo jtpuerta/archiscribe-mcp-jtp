@@ -1,62 +1,67 @@
 import { ModelLoader } from '../model/loader';
-import { renderViewListMarkdown, renderViewDetailsMarkdownFromModel, renderElementListMarkdown, renderElementDetailsMarkdownFromModel } from '../renderer';
-import { loadConfig } from '../config';
+import { loadConfig, ResponseFormat } from '../config';
+import { getFormatter } from '../renderer/formatters';
 import { getLogger } from '../utils/logger';
+import { getRequestFormat } from '../utils/requestContext';
 
 export interface SearchViewsInput {
   query?: string;
+  format?: ResponseFormat;
 }
 
 export interface SearchViewsOutput {
-  markdown: string;
+  content: string;
   [key: string]: unknown; // MCP compatibility
 }
 
 export interface GetViewDetailsInput {
   viewname: string;
+  format?: ResponseFormat;
 }
 
 export interface GetViewDetailsOutput {
   id?: string;
-  markdown: string;
+  content: string;
   [key: string]: unknown; // MCP compatibility
 }
 
 export interface SearchElementsInput {
   query?: string;
   type?: string;
+  format?: ResponseFormat;
 }
 
 export interface SearchElementsOutput {
-  markdown: string;
+  content: string;
   [key: string]: unknown; // MCP compatibility
 }
 
 export interface GetElementDetailsInput {
   elementname: string;
+  format?: ResponseFormat;
 }
 
 export interface GetElementDetailsOutput {
   id?: string;
-  markdown: string;
+  content: string;
   [key: string]: unknown; // MCP compatibility
 }
 
 // Helper functions to ensure type safety while maintaining MCP compatibility
-function createSearchViewsOutput(markdown: string): SearchViewsOutput {
-  return { markdown };
+function createSearchViewsOutput(content: string): SearchViewsOutput {
+  return { content };
 }
 
-function createGetViewDetailsOutput(markdown: string, id?: string): GetViewDetailsOutput {
-  return { markdown, id };
+function createGetViewDetailsOutput(content: string, id?: string): GetViewDetailsOutput {
+  return { content, id };
 }
 
-function createSearchElementsOutput(markdown: string): SearchElementsOutput {
-  return { markdown };
+function createSearchElementsOutput(content: string): SearchElementsOutput {
+  return { content };
 }
 
-function createGetElementDetailsOutput(markdown: string, id?: string): GetElementDetailsOutput {
-  return { markdown, id };
+function createGetElementDetailsOutput(content: string, id?: string): GetElementDetailsOutput {
+  return { content, id };
 }
 
 export function createTools(modelPath?: string) {
@@ -65,10 +70,8 @@ export function createTools(modelPath?: string) {
   const logger = getLogger();
   const DISCLAIMER_PREFIX = cfg.disclaimerPrefix || '';
 
-  // Add disclaimer at the start of the markdown, to reduce risk of prompt injection
-  function withDisclaimer(md: string): string {
-    if (!md) return DISCLAIMER_PREFIX;
-    return md.startsWith(DISCLAIMER_PREFIX) ? md : DISCLAIMER_PREFIX + md;
+  function resolveFormat(format?: ResponseFormat): ResponseFormat {
+    return format || getRequestFormat() || cfg.responseFormat;
   }
 
   async function searchViewsHandler(input: SearchViewsInput): Promise<SearchViewsOutput> {
@@ -81,8 +84,9 @@ export function createTools(modelPath?: string) {
         const pname = cfg.viewsFilterPropertyName;
         views = views.filter(v => v.properties && Object.prototype.hasOwnProperty.call(v.properties, pname));
       }
-      const markdown = withDisclaimer(renderViewListMarkdown(views));
-      const out = createSearchViewsOutput(markdown);
+      const formatter = getFormatter(resolveFormat(input?.format));
+      const content = formatter.formatViewList(views, DISCLAIMER_PREFIX || undefined);
+      const out = createSearchViewsOutput(content);
       (out as any).__audit = {
         resultCount: views.length
       };
@@ -104,8 +108,9 @@ export function createTools(modelPath?: string) {
         (out as any).__audit = { found: false };
         return out;
       }
-      const markdown = withDisclaimer(renderViewDetailsMarkdownFromModel(model, v));
-      out = createGetViewDetailsOutput(markdown, v.id);
+      const formatter = getFormatter(resolveFormat(input?.format));
+      const content = formatter.formatViewDetails(model, v, DISCLAIMER_PREFIX || undefined);
+      out = createGetViewDetailsOutput(content, v.id);
       (out as any).__audit = { found: true, viewId: v.id };
       return out;
     });
@@ -134,8 +139,9 @@ export function createTools(modelPath?: string) {
         elements = elements.filter(e => (e.type || '').toLowerCase().includes(t));
       }
 
-      const markdown = withDisclaimer(renderElementListMarkdown(elements));
-      const out = createSearchElementsOutput(markdown);
+      const formatter = getFormatter(resolveFormat(input?.format));
+      const content = formatter.formatElementList(elements, DISCLAIMER_PREFIX || undefined);
+      const out = createSearchElementsOutput(content);
       (out as any).__audit = {
         resultCount: elements.length
       };
@@ -159,8 +165,9 @@ export function createTools(modelPath?: string) {
         return out;
       }
 
-      const markdown = withDisclaimer(renderElementDetailsMarkdownFromModel(model, element));
-      out = createGetElementDetailsOutput(markdown, element.id);
+      const formatter = getFormatter(resolveFormat(input?.format));
+      const content = formatter.formatElementDetails(model, element, DISCLAIMER_PREFIX || undefined);
+      out = createGetElementDetailsOutput(content, element.id);
       (out as any).__audit = { found: true, elementId: element.id };
       return out;
     });
