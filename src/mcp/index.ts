@@ -4,12 +4,39 @@ import { createMcpServer } from './server';
 import { appService } from '../services/app';
 import { createJsonRpcError, handleMcpError } from '../utils/errors';
 import { getLogger } from '../utils/logger';
-import { requestContext } from '../utils/requestContext';
 import { ResponseFormat } from '../config';
 
 const VALID_FORMATS: ResponseFormat[] = ['markdown', 'yaml', 'json'];
 
 const logger = getLogger();
+
+function parseHeaderFormat(raw: unknown): ResponseFormat | undefined {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim().toLowerCase();
+  return VALID_FORMATS.includes(normalized as ResponseFormat)
+    ? (normalized as ResponseFormat)
+    : undefined;
+}
+
+function applyHeaderFormatToToolCallBody(body: any, format?: ResponseFormat): any {
+  if (!format || !body) return body;
+
+  const applyToPayload = (payload: any) => {
+    if (!payload || payload.method !== 'tools/call') return;
+    if (!payload.params || typeof payload.params !== 'object') payload.params = {};
+    if (!payload.params.arguments || typeof payload.params.arguments !== 'object') payload.params.arguments = {};
+    if (!payload.params.arguments.format) payload.params.arguments.format = format;
+  };
+
+  if (Array.isArray(body)) {
+    body.forEach(applyToPayload);
+    return body;
+  }
+
+  applyToPayload(body);
+  return body;
+}
 
 const port = Number(process.env.PORT || appService.config.serverPort);
 
@@ -50,17 +77,11 @@ async function handleMcpRequest(mcp: any, req: any, res: any): Promise<void> {
   });
 
   // Resolve format from X-Response-Format header
-  const headerValue = req.headers['x-response-format'];
-  const headerFormat: ResponseFormat | undefined =
-    typeof headerValue === 'string' && VALID_FORMATS.includes(headerValue as ResponseFormat)
-      ? headerValue as ResponseFormat
-      : undefined;
+  const headerFormat = parseHeaderFormat(req.headers['x-response-format']);
+  const requestBody = applyHeaderFormatToToolCallBody(body, headerFormat);
 
-  // Connect and handle the request within the request context so tool handlers can read the format
-  await requestContext.run({ responseFormat: headerFormat }, async () => {
-    await mcp.sdkServer.connect(transport);
-    await transport.handleRequest(req as any, res as any, body);
-  });
+  await mcp.sdkServer.connect(transport);
+  await transport.handleRequest(req as any, res as any, requestBody);
 }
 
 async function main() {

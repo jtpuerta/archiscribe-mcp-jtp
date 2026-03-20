@@ -2,7 +2,6 @@ import { ModelLoader } from '../model/loader';
 import { loadConfig, ResponseFormat } from '../config';
 import { getFormatter } from '../renderer/formatters';
 import { getLogger } from '../utils/logger';
-import { getRequestFormat } from '../utils/requestContext';
 
 export interface SearchViewsInput {
   query?: string;
@@ -71,7 +70,7 @@ export function createTools(modelPath?: string) {
   const DISCLAIMER_PREFIX = cfg.disclaimerPrefix || '';
 
   function resolveFormat(format?: ResponseFormat): ResponseFormat {
-    return format || getRequestFormat() || cfg.responseFormat;
+    return format || cfg.responseFormat;
   }
 
   async function searchViewsHandler(input: SearchViewsInput): Promise<SearchViewsOutput> {
