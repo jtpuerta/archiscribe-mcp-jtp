@@ -174,8 +174,9 @@ export class ModelLoader {
       const name = r.name ? (typeof r.name === 'string' ? r.name : r.name['#text']) : undefined;
       const documentation = r.documentation ? (typeof r.documentation === 'string' ? r.documentation : r.documentation['#text']) : undefined;
       const properties = this.parseProperties(r.properties, propDefs);
+      const accessType = attr(r, 'accessType'); // For Access relationships
       
-      return { id, type, sourceId: source, targetId: target, name, documentation, properties } as RelationshipObject;
+      return { id, type, sourceId: source, targetId: target, name, documentation, properties, accessType } as RelationshipObject;
     });
   }
 

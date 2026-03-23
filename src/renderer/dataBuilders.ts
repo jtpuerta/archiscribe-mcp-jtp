@@ -39,6 +39,7 @@ export function buildViewDetailsData(model: ModelData, view: ViewObject): Record
       if (r.type) relData.type = r.type;
       if (r.name) relData.name = r.name;
       if (r.documentation) relData.documentation = r.documentation;
+      if (r.accessType) relData.accessType = r.accessType;
       if (r.properties && Object.keys(r.properties).length > 0) {
         relData.properties = { ...r.properties };
       }
@@ -61,6 +62,7 @@ export function buildViewDetailsData(model: ModelData, view: ViewObject): Record
         relData.type = `${implicitRel.type} (implicit from view nesting)`;
         if (implicitRel.name) relData.name = implicitRel.name;
         if (implicitRel.documentation) relData.documentation = implicitRel.documentation;
+        if (implicitRel.accessType) relData.accessType = implicitRel.accessType;
         if (implicitRel.properties && Object.keys(implicitRel.properties).length > 0) {
           relData.properties = { ...implicitRel.properties };
         }
@@ -118,6 +120,7 @@ export function buildElementDetailsData(model: ModelData, element: ElementObject
         if (rel.type) r.type = rel.type;
         if (rel.name) r.name = rel.name;
         if (rel.documentation) r.documentation = rel.documentation;
+        if (rel.accessType) r.accessType = rel.accessType;
         return r;
       }).filter(Boolean);
     }
@@ -130,6 +133,7 @@ export function buildElementDetailsData(model: ModelData, element: ElementObject
         if (rel.type) r.type = rel.type;
         if (rel.name) r.name = rel.name;
         if (rel.documentation) r.documentation = rel.documentation;
+        if (rel.accessType) r.accessType = rel.accessType;
         return r;
       }).filter(Boolean);
     }

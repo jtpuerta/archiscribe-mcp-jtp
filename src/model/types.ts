@@ -29,6 +29,7 @@ export interface RelationshipObject {
   name?: string;
   documentation?: string;
   properties?: Record<string,string>;
+  accessType?: string; // For Access relationships (Read, Write, ReadWrite)
 }
 
 export interface ModelData {

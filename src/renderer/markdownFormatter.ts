@@ -64,6 +64,7 @@ export function renderViewDetailsMarkdownFromModel(model: ModelData, view: ViewO
       if (r.type) explicitRels.push(`  - Type: ${r.type}`);
       if (r.name) explicitRels.push(`  - Name: ${r.name}`);
       if (r.documentation) explicitRels.push(`  - Documentation: ${r.documentation}`);
+      if (r.accessType) explicitRels.push(`  - Access Type: ${r.accessType}`);
       if (r.properties && Object.keys(r.properties).length > 0) {
         explicitRels.push('  - Properties:');
         for (const [k, v] of Object.entries(r.properties)) explicitRels.push(`    - ${k}: ${v}`);
@@ -92,6 +93,7 @@ export function renderViewDetailsMarkdownFromModel(model: ModelData, view: ViewO
         implicitRels.push(`  - Type: ${implicitRel.type} (implicit from view nesting)`);
         if (implicitRel.name) implicitRels.push(`  - Name: ${implicitRel.name}`);
         if (implicitRel.documentation) implicitRels.push(`  - Documentation: ${implicitRel.documentation}`);
+        if (implicitRel.accessType) implicitRels.push(`  - Access Type: ${implicitRel.accessType}`);
         if (implicitRel.properties && Object.keys(implicitRel.properties).length > 0) {
           implicitRels.push('  - Properties:');
           for (const [k, v] of Object.entries(implicitRel.properties)) implicitRels.push(`    - ${k}: ${v}`);
@@ -172,6 +174,7 @@ export function renderElementDetailsMarkdownFromModel(model: ModelData, element:
         if (rel.type) lines.push(`  - Type: ${rel.type}`);
         if (rel.name) lines.push(`  - Name: ${rel.name}`);
         if (rel.documentation) lines.push(`  - Documentation: ${rel.documentation}`);
+        if (rel.accessType) lines.push(`  - Access Type: ${rel.accessType}`);
         lines.push('');
       }
     }
@@ -185,6 +188,7 @@ export function renderElementDetailsMarkdownFromModel(model: ModelData, element:
         if (rel.type) lines.push(`  - Type: ${rel.type}`);
         if (rel.name) lines.push(`  - Name: ${rel.name}`);
         if (rel.documentation) lines.push(`  - Documentation: ${rel.documentation}`);
+        if (rel.accessType) lines.push(`  - Access Type: ${rel.accessType}`);
         lines.push('');
       }
     }
