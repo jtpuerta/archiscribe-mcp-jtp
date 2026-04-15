@@ -4,6 +4,7 @@ import { createMcpServer } from './server';
 import { appService } from '../services/app';
 import { createJsonRpcError, handleMcpError } from '../utils/errors';
 import { getLogger } from '../utils/logger';
+import { validateEntraAccessToken, isCloudEnvironment, isAuthEnforced, getBearerChallenge, writeProtectedResourceMetadata } from '../utils/auth';
 import { ResponseFormat } from '../config';
 
 const VALID_FORMATS: ResponseFormat[] = ['markdown', 'yaml', 'json'];
@@ -86,6 +87,7 @@ async function handleMcpRequest(mcp: any, req: any, res: any): Promise<void> {
 
 async function main() {
   const enableHttp = Boolean(appService.config.enableHttpEndpoints);
+  const authEnforced = isAuthEnforced();
   const router = enableHttp ? new Router() : undefined;
   const mcp = await createMcpServer();
   // Start the MCP server if it has SDK backing so transports and notifications are initialized
@@ -103,7 +105,59 @@ async function main() {
     const url = new URL(req.url || '/', `http://${host}`);
     const pathname = url.pathname;
 
+    if (req.method === 'GET' && pathname === '/.well-known/oauth-protected-resource') {
+      if (!authEnforced) {
+        res.statusCode = 404;
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ error: 'Not Found' }));
+        return;
+      }
+      writeProtectedResourceMetadata(req, res);
+      return;
+    }
+
     if (pathname === '/mcp') {
+      if (!authEnforced) {
+        try {
+          await handleMcpRequest(mcp, req, res);
+        } catch (err: any) {
+          handleMcpError(res, err);
+        }
+        return;
+      }
+
+      const authHeaderRaw = req.headers.authorization;
+      const authHeader = Array.isArray(authHeaderRaw) ? authHeaderRaw[0] : authHeaderRaw;
+
+      if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
+        res.statusCode = 401;
+        res.setHeader('www-authenticate', getBearerChallenge(req, 'invalid_token', 'Missing bearer access token'));
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify(createJsonRpcError(-32001, 'Unauthorized')));
+        return;
+      }
+
+      const token = authHeader.slice('bearer '.length).trim();
+      if (!token) {
+        res.statusCode = 401;
+        res.setHeader('www-authenticate', getBearerChallenge(req, 'invalid_token', 'Missing bearer access token'));
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify(createJsonRpcError(-32001, 'Unauthorized')));
+        return;
+      }
+
+      try {
+        await validateEntraAccessToken(token);
+      } catch (err) {
+        const message = (err as Error)?.message || 'Invalid bearer token';
+        logger.log('warn', 'auth.token.invalid', { reason: message });
+        res.statusCode = 401;
+        res.setHeader('www-authenticate', getBearerChallenge(req, 'invalid_token', message));
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify(createJsonRpcError(-32001, 'Unauthorized')));
+        return;
+      }
+
       try {
         await handleMcpRequest(mcp, req, res);
       } catch (err: any) {
@@ -133,6 +187,11 @@ async function main() {
   server.listen(Number(port), () => {
     console.log(`Server listening on port ${port}`);
     logger.log('info', 'server.listen', { port });
+    logger.log('info', 'server.auth.mode', {
+      mode: process.env.MCP_AUTH_MODE || 'auto',
+      authEnforced,
+      cloudEnvironment: isCloudEnvironment()
+    });
   });
 }
 

@@ -4,7 +4,7 @@ The **ArchiScribe MCP Server** is a [Model Context Protocol (MCP)](https://model
 
 More details here: [https://declanbright.com/software/archiscribe-mcp-server/](https://declanbright.com/software/archiscribe-mcp-server/)
 
-> **Warning:** This MCP server is only suitable for local deployment, on a user's computer. There are minimal security controls, therefore it is not secure to deploy it to a remote server.
+> **Note:** When deployed to Azure App Service, the server enforces Entra ID (Microsoft Entra) bearer token authentication. See the [Authentication](#authentication) section for details. For local development, authentication is disabled automatically — no configuration required.
 
 > **Note:** The model file must be in the **[ArchiMate Exchange File (.xml)](https://www.opengroup.org/open-group-archimate-model-exchange-file-format)** format.
 
@@ -97,18 +97,68 @@ Supports MCP over HTTP at the `/mcp` endpoint for integration with MCP clients.
 
 ---
 
+## Authentication
+
+The server supports Entra ID (Microsoft Entra) bearer token authentication and auto-detects whether it is running on Azure App Service.
+
+### Auth Modes
+
+The `MCP_AUTH_MODE` environment variable controls enforcement:
+
+| Value | Behaviour |
+|-------|-----------|
+| `auto` (default) | Enforced on Azure App Service; disabled locally |
+| `required` / `on` / `true` | Always enforced |
+| `disabled` / `off` / `false` | Always disabled |
+
+Local detection uses the `WEBSITE_INSTANCE_ID` / `WEBSITE_SITE_NAME` / `WEBSITE_HOSTNAME` environment variables that Azure sets automatically on App Service. Do not set `MCP_AUTH_MODE` unless you need to override this behaviour.
+
+### Local Development
+
+No configuration required. With `MCP_AUTH_MODE=auto` (the default), the server detects it is not on App Service and opens `/mcp` without requiring a token.
+
+### Azure App Service Deployment
+
+Set these App Service application settings:
+
+| Setting | Description | Example |
+|---------|-------------|----------|
+| `AAD_TENANT_ID` | Entra tenant ID | `24e3b176-9cdb-...` |
+| `OAUTH_AUDIENCE` | API app registration URI | `api://4c6d54f3-...` |
+| `OAUTH_SCOPE` | Required scope | `api://4c6d54f3-.../user_impersonation` |
+| `AUTHORIZATION_SERVER_URL` | Entra v2 issuer *(optional)* | `https://login.microsoftonline.com/{tenantId}/v2.0` |
+
+The server publishes `/.well-known/oauth-protected-resource` (RFC9728), which lets MCP clients discover the correct Entra authorization server automatically. No manual auth-server URL is needed in client config.
+
+### VS Code Configuration (Azure)
+
+```json
+"archiscribe": {
+  "url": "https://your-app.azurewebsites.net/mcp",
+  "type": "http"
+}
+```
+
+VS Code will prompt for sign-in on first use and cache the token. The `/.well-known/oauth-protected-resource` endpoint tells VS Code which Entra tenant and scope to request — no additional configuration is needed.
+
+---
+
 ## MCP Tools
 
 The server exposes four MCP tools. All tools accept an optional `format` parameter (`markdown`, `yaml`, or `json`) to override the configured response format on a per-call basis.
 
 ### SearchViews
 
-- **Input**: `query` (optional string) — keyword to search for view names; `format` (optional) — response format
+- **Input**: 
+  - `query` (optional string) — keyword to search for view names
+  - `format` (optional) — response format
 - **Output**: List of matching views
 
 ### GetViewDetails
 
-- **Input**: `viewname` (required string) — exact name of the view; `format` (optional) — response format
+- **Input**: 
+  - `viewname` (required string) — exact name of the view
+  - `format` (optional) — response format
 - **Output**: Document with metadata, elements, and relationships
 
 ### SearchElements
@@ -121,7 +171,9 @@ The server exposes four MCP tools. All tools accept an optional `format` paramet
 
 ### GetElementDetails
 
-- **Input**: `elementname` (required string) — name of the element to retrieve; `format` (optional) — response format
+- **Input**: 
+  - `elementname` (required string) — name of the element to retrieve
+  - `format` (optional) — response format
 - **Output**: Document with element metadata, properties, referenced views, and relationships
 
 ---
