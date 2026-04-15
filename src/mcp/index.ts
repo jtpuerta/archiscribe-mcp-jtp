@@ -4,7 +4,7 @@ import { createMcpServer } from './server';
 import { appService } from '../services/app';
 import { createJsonRpcError, handleMcpError } from '../utils/errors';
 import { getLogger } from '../utils/logger';
-import { validateEntraAccessToken, isCloudEnvironment, isAuthEnforced, getBearerChallenge, writeProtectedResourceMetadata } from '../utils/auth';
+import { validateEntraAccessToken, isCloudEnvironment, isAuthEnforced, getBearerChallenge, writeProtectedResourceMetadata, getUsernameFromClaims, getUsernameFromBearerTokenUnverified } from '../utils/auth';
 import { ResponseFormat } from '../config';
 
 const VALID_FORMATS: ResponseFormat[] = ['markdown', 'yaml', 'json'];
@@ -146,11 +146,18 @@ async function main() {
         return;
       }
 
+      let username: string | undefined;
       try {
-        await validateEntraAccessToken(token);
+        const validation = await validateEntraAccessToken(token);
+        username = getUsernameFromClaims(validation.claims);
       } catch (err) {
         const message = (err as Error)?.message || 'Invalid bearer token';
-        logger.log('warn', 'auth.token.invalid', { reason: message });
+        const usernameHint = getUsernameFromBearerTokenUnverified(token);
+        logger.log('warn', 'auth.token.invalid', {
+          reason: message,
+          username: usernameHint,
+          usernameSource: usernameHint ? 'unverified_token_claim' : undefined
+        });
         res.statusCode = 401;
         res.setHeader('www-authenticate', getBearerChallenge(req, 'invalid_token', message));
         res.setHeader('content-type', 'application/json');
@@ -159,7 +166,13 @@ async function main() {
       }
 
       try {
-        await handleMcpRequest(mcp, req, res);
+        if (username) {
+          await logger.withContext({ username }, async () => {
+            await handleMcpRequest(mcp, req, res);
+          });
+        } else {
+          await handleMcpRequest(mcp, req, res);
+        }
       } catch (err: any) {
         handleMcpError(res, err);
       }

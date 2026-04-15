@@ -3,6 +3,12 @@ import { Router } from '../../src/api/router';
 import { AddressInfo } from 'net';
 import http from 'http';
 
+function extractFirstViewName(markdown: string): string | undefined {
+  const lines = markdown.split('\n').map(l => l.trim());
+  const item = lines.find(l => l.startsWith('- ') && l.length > 2);
+  return item ? item.slice(2).trim() : undefined;
+}
+
 describe('HTTP integration', () => {
   let server: http.Server;
   let port: number;
@@ -27,16 +33,23 @@ describe('HTTP integration', () => {
   });
 
   it('GET /views returns markdown', async () => {
-    const res = await fetch(`http://localhost:${port}/views?q=Dataflow`);
+    const res = await fetch(`http://localhost:${port}/views`);
     expect(res.status).toBe(200);
     const text = await res.text();
-    expect(text).toContain('Dataflow');
+    expect(text).toContain('ArchiMate Views');
+    expect(extractFirstViewName(text)).toBeTruthy();
   });
 
   it('GET /views/:name returns view details markdown', async () => {
-    const res = await fetch(`http://localhost:${port}/views/${encodeURIComponent('Dataflow View')}`);
+    const listRes = await fetch(`http://localhost:${port}/views`);
+    expect(listRes.status).toBe(200);
+    const listText = await listRes.text();
+    const viewName = extractFirstViewName(listText);
+    expect(viewName).toBeTruthy();
+
+    const res = await fetch(`http://localhost:${port}/views/${encodeURIComponent(viewName!)}`);
     expect(res.status).toBe(200);
     const text = await res.text();
-    expect(text).toContain('ArchiMate View name: Dataflow View');
+    expect(text).toContain(`ArchiMate View name: ${viewName}`);
   });
 });

@@ -303,9 +303,24 @@ All HTTP endpoints support an optional `?format=` query parameter (`markdown`, `
 
 Every MCP tool invocation and HTTP request to `/views` or `/views/{viewname}` is logged as a structured JSON line (NDJSON) for audit purposes.
 
-### Log Location
+### Log Target
 
-Logs are written to a daily file in the directory specified by `logPath` (default: `logs`).
+Use `logTarget` to control where logs are written:
+
+| Value | Behaviour |
+|-------|-----------|
+| `auto` (default) | Uses `console` in cloud environments (Azure App Service), otherwise `file` locally |
+| `file` | Always writes daily log files under `logPath` |
+| `console` | Always writes to stdout |
+| `both` | Writes to both file and stdout |
+
+Cloud detection for `auto` uses App Service environment variables (`WEBSITE_INSTANCE_ID`, `WEBSITE_SITE_NAME`, `WEBSITE_HOSTNAME`, `WEBSITE_RESOURCE_GROUP`).
+
+For Azure App Service deployments, prefer `logTarget: "auto"` or `"console"` so logs are captured by App Service log streaming and platform diagnostics.
+
+### File Log Location (`file` or `both`)
+
+When file logging is enabled, logs are written to a daily file in the directory specified by `logPath` (default: `logs`).
 File name pattern:
 
 ```
@@ -316,6 +331,24 @@ Each line is a JSON object, for example:
 
 ```
 {"ts":"2025-09-08T10:15:23.456Z","level":"info","event":"tool.invoke","tool":"SearchViews","params":{"query":"Data"},"durationMs":12,"success":true}
+```
+
+### Logging Configuration Examples
+
+Config file (`config/settings.json`):
+
+```json
+{
+  "logLevel": "info",
+  "logPath": "logs",
+  "logTarget": "auto"
+}
+```
+
+Environment variables:
+
+```powershell
+$env:LOG_TARGET='console'; $env:LOG_LEVEL='info'; npm start
 ```
 
 ### Fields

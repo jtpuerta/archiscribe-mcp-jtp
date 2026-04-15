@@ -1,5 +1,6 @@
-import { mkdirSync, createWriteStream, WriteStream, statSync } from 'fs';
+import { mkdirSync, createWriteStream, WriteStream } from 'fs';
 import { join } from 'path';
+import { AsyncLocalStorage } from 'async_hooks';
 import { loadConfig } from '../config';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -11,6 +12,12 @@ interface LogRecordBase {
   [k: string]: any; // extensible
 }
 
+export interface LogContext {
+  username?: string;
+}
+
+type LogTarget = 'auto' | 'file' | 'console' | 'both';
+
 const LEVEL_ORDER: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 
 class DailyFileLogger {
@@ -19,15 +26,46 @@ class DailyFileLogger {
   private logDir: string;
   private level: LogLevel;
   private warned: boolean = false;
+  private target: LogTarget;
+  private readonly contextStore = new AsyncLocalStorage<LogContext>();
 
-  constructor(dir?: string, level?: LogLevel) {
+  constructor(dir?: string, level?: LogLevel, target?: LogTarget) {
     const cfg = loadConfig();
     this.logDir = dir || (cfg as any).logPath || 'logs';
     this.level = level || (cfg as any).logLevel || 'info';
-    this.ensureStream();
+    this.target = target || (cfg as any).logTarget || 'auto';
+    if (this.shouldWriteFile()) {
+      this.ensureStream();
+    }
   }
 
   private today(): string { return new Date().toISOString().slice(0,10); }
+
+  private isCloudEnvironment(): boolean {
+    return Boolean(
+      process.env.WEBSITE_INSTANCE_ID
+      || process.env.WEBSITE_SITE_NAME
+      || process.env.WEBSITE_HOSTNAME
+      || process.env.WEBSITE_RESOURCE_GROUP
+    );
+  }
+
+  private resolveTarget(): Exclude<LogTarget, 'auto'> {
+    if (this.target === 'auto') {
+      return this.isCloudEnvironment() ? 'console' : 'file';
+    }
+    return this.target;
+  }
+
+  private shouldWriteFile(): boolean {
+    const resolved = this.resolveTarget();
+    return resolved === 'file' || resolved === 'both';
+  }
+
+  private shouldWriteConsole(): boolean {
+    const resolved = this.resolveTarget();
+    return resolved === 'console' || resolved === 'both';
+  }
 
   private ensureStream() {
     const d = this.today();
@@ -56,16 +94,28 @@ class DailyFileLogger {
 
   log(level: LogLevel, event: string, record: Record<string, any>) {
     if (!this.shouldLog(level)) return;
-    this.ensureStream();
+    if (this.shouldWriteFile()) {
+      this.ensureStream();
+    }
     const base: LogRecordBase = { ts: new Date().toISOString(), level, event };
-    const out = { ...base, ...this.sanitize(record) };
+    const context = this.contextStore.getStore() || {};
+    const out = { ...base, ...this.sanitize(context), ...this.sanitize(record) };
     const line = JSON.stringify(out);
-    if (this.stream) {
+
+    let wroteFile = false;
+    if (this.shouldWriteFile() && this.stream) {
       this.stream.write(line + '\n');
-    } else {
-      // fallback
+      wroteFile = true;
+    }
+
+    if (this.shouldWriteConsole() || (!wroteFile && this.target !== 'console')) {
       console.log(line);
     }
+  }
+
+  withContext<T>(context: LogContext, fn: () => Promise<T> | T): Promise<T> {
+    const existing = this.contextStore.getStore() || {};
+    return Promise.resolve(this.contextStore.run({ ...existing, ...context }, fn));
   }
 
   private sanitize(obj: any, depth = 0): any {

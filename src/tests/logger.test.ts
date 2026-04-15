@@ -30,4 +30,16 @@ describe('logger', () => {
     expect(last.success).toBe(true);
     expect(typeof last.durationMs).toBe('number');
   });
+
+  it('includes username from async log context', async () => {
+    await logger.withContext({ username: 'cloud.user@contoso.com' }, async () => {
+      await logger.auditToolInvocation('ContextTool', { sample: true }, async () => ({ ok: true }));
+    });
+    await logger.flush();
+
+    const content = readFileSync(logFile, 'utf8').trim().split('\n');
+    const last = JSON.parse(content[content.length - 1]);
+    expect(last.tool).toBe('ContextTool');
+    expect(last.username).toBe('cloud.user@contoso.com');
+  });
 });

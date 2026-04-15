@@ -6,6 +6,32 @@ export interface TokenValidationResult {
   claims: JwtPayload;
 }
 
+function asNonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+export function getUsernameFromClaims(claims: JwtPayload): string | undefined {
+  return (
+    asNonEmptyString(claims.preferred_username)
+    || asNonEmptyString(claims.upn)
+    || asNonEmptyString(claims.email)
+    || asNonEmptyString(claims.unique_name)
+    || asNonEmptyString(claims.name)
+    || asNonEmptyString(claims.oid)
+    || asNonEmptyString(claims.sub)
+  );
+}
+
+export function getUsernameFromBearerTokenUnverified(token: string): string | undefined {
+  try {
+    const decoded = jwt.decode(token);
+    if (!decoded || typeof decoded === 'string') return undefined;
+    return getUsernameFromClaims(decoded as JwtPayload);
+  } catch {
+    return undefined;
+  }
+}
+
 interface ValidationConfig {
   issuers: string[];
   audiences: string[];

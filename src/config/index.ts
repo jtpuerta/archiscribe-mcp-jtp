@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 export type ResponseFormat = 'markdown' | 'yaml' | 'json';
+export type LogTarget = 'auto' | 'file' | 'console' | 'both';
 
 export interface Config {
   modelPath: string;
@@ -10,9 +11,18 @@ export interface Config {
   serverPort: number;
   logPath: string;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
+  logTarget: LogTarget;
   disclaimerPrefix?: string;
   enableHttpEndpoints?: boolean;
   responseFormat: ResponseFormat;
+}
+
+function normalizeLogTarget(raw: unknown): LogTarget {
+  const value = String(raw || '').trim().toLowerCase();
+  if (value === 'file' || value === 'console' || value === 'both' || value === 'auto') {
+    return value;
+  }
+  return 'auto';
 }
 
 function readSettings(): Partial<Config> {
@@ -42,6 +52,7 @@ export function loadConfig(): Config {
     enableHttpEndpoints: (process.env.ENABLE_HTTP_ENDPOINTS || String((defaults as any).enableHttpEndpoints || 'false')) === 'true',
     logPath: process.env.LOG_PATH || (defaults as any).logPath || 'logs',
     logLevel: (process.env.LOG_LEVEL as any) || (defaults as any).logLevel || 'info',
+    logTarget: normalizeLogTarget(process.env.LOG_TARGET || (defaults as any).logTarget || 'auto'),
     disclaimerPrefix: process.env.DISCLAIMER_PREFIX || (defaults as any).disclaimerPrefix || '',
     responseFormat: (process.env.RESPONSE_FORMAT as ResponseFormat) || (defaults as any).responseFormat || 'markdown'
   };
