@@ -56,9 +56,13 @@ Uses `ts-node-dev` to execute TypeScript directly and restart on changes.
 
 ---
 
-## Verifying the Server
+## Verifying the MCP Server
 
-On successful startup, you should see:
+### Check Log File content at startup
+
+On successful startup, you should see in the log file:
+
+Rq: no logs on console to enable Stdio MCP access (? / TODO)
 
 ```
 MCP: initialising server
@@ -67,6 +71,14 @@ MCP: registered tool: GetViewDetails
 MCP: registered tool: SearchElements
 MCP: registered tool: GetElementDetails
 Server listening on port 3030
+```
+
+### Check SearchViews from curl
+```
+curl -X POST http://localhost:3030/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"SearchViews","arguments":{}}}'
 ```
 
 ---
@@ -85,6 +97,20 @@ Server listening on port 3030
 ## MCP Client Configuration
 
 Supports MCP over HTTP at the `/mcp` endpoint for integration with MCP clients.
+
+### MCP Inspector 
+
+Run the MCP Inspector form archiscribe-mcp project root
+
+`npx @modelcontextprotocol/inspector@latest`
+
+=> If usage of Transport Type = "Streamable HTTP", then
+- the MCP Server must be launch (npm start or npm run dev)
+- in the MCP Inspector, use "Proxy" Connexion Type when both MCP Server and MCP Inspector are on the same host
+
+=> If usage of Transport Type = "STDIO" (MCP Server and MCP Inspector aron the same host), then
+- the MCP Server must not be launch
+- in the MCP Inspector, use Command "node" and set the path to stdio.ts file in the Arguments (set the full path to stdio.ts with slash forward (/) and not anti slash (\)) 
 
 ### VS Code Configuration
 

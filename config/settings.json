@@ -1,5 +1,5 @@
 {
-  "modelPath": "data/archimate-scribe-demo-model.xml",
+  "modelPath": "data/MAMP-V1_OpenExchangeXML.xml",
   "viewsFilterByProperty": false,
   "viewsFilterPropertyName": "AI-Context",
   "serverPort": 3030,
