@@ -1,4 +1,5 @@
 node_modules/
+data/MAMP-V1_OpenExchangeXML.xml
 dist/
 .env
 /.vscode/

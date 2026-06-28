@@ -80,11 +80,11 @@ class DailyFileLogger {
       this.stream = createWriteStream(file, { flags: 'a', encoding: 'utf8' });
     } catch (err) {
       if (!this.warned) {
-        // Fallback to console if file logging fails
-        console.warn('Logger: cannot write log file:', (err as Error).message);
+        //  Sécurisé pour MCP : on pousse l'avertissement sur stderr
+        console.error('Logger: cannot write log file:', (err as Error).message);
         this.warned = true;
       }
-      this.stream = null; // will fallback to console
+      this.stream = null;
     }
   }
 
@@ -109,7 +109,8 @@ class DailyFileLogger {
     }
 
     if (this.shouldWriteConsole() || (!wroteFile && this.target !== 'console')) {
-      console.log(line);
+      //  Sécurisé pour MCP : On envoie les logs au terminal via stderr !
+      console.error(line); 
     }
   }
 

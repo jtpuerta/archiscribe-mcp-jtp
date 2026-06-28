@@ -2,6 +2,16 @@ import { appService } from '../services/app';
 import { z } from 'zod';
 import { getLogger } from '../utils/logger';
 
+// Gemini: À ajouter tout en haut du fichier src/mcp/server.ts
+process.on('uncaughtException', (err: any) => {
+  if (err.code === 'ENOENT') {
+    console.error(`=== 🚨 COMPOSANT MANQUANT DETECTE ===`);
+    console.error(`Le serveur a essayé de lancer la commande : "${err.path}"`);
+    console.error(`Vérifie que ce programme est bien installé sur ton Windows !`);
+    console.error(err.stack);
+  }
+});
+
 type SdkServer = any;
 
 // Create and start an MCP server registering our tools. This function will try to import
@@ -16,7 +26,7 @@ export async function createMcpServer() {
     // Try to load the high-level McpServer (preferred approach)
     const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js');
     
-    console.info('MCP: initialising server');
+    //console.info('MCP: initialising server');
     logger.log('info', 'mcp.init', { message: 'initialising server' });
     
     const server = new McpServer(
@@ -35,12 +45,15 @@ export async function createMcpServer() {
           format: z.enum(['markdown', 'yaml', 'json']).optional().describe('Response format (default: markdown)')
         },
       },
-      async (args: { query?: string; format?: 'markdown' | 'yaml' | 'json' }) => {
+	  
+	// @ts-ignore
+	async (args: { query?: string; format?: 'markdown' | 'yaml' | 'json' }) => {
+		
         const out = await tools.searchViewsHandler({ query: args?.query, format: args?.format });
         return { content: [{ type: 'text', text: out.content }], structuredContent: out };
       }
     );
-    console.info('MCP: registered tool: SearchViews');
+    //console.info('MCP: registered tool: SearchViews');
     logger.log('info', 'mcp.tool.register', { tool: 'SearchViews', highLevel: true });
 
     // Register the GetViewDetails tool
@@ -59,7 +72,7 @@ export async function createMcpServer() {
         return { content: [{ type: 'text', text: out.content }], structuredContent: out };
       }
     );
-    console.info('MCP: registered tool: GetViewDetails');
+    //console.info('MCP: registered tool: GetViewDetails');
     logger.log('info', 'mcp.tool.register', { tool: 'GetViewDetails', highLevel: true });
 
     // Register the SearchElements tool
@@ -79,7 +92,7 @@ export async function createMcpServer() {
         return { content: [{ type: 'text', text: out.content }], structuredContent: out };
       }
     );
-    console.info('MCP: registered tool: SearchElements');
+    //console.info('MCP: registered tool: SearchElements');
     logger.log('info', 'mcp.tool.register', { tool: 'SearchElements', highLevel: true });
 
     // Register the GetElementDetails tool
@@ -98,7 +111,7 @@ export async function createMcpServer() {
         return { content: [{ type: 'text', text: out.content }], structuredContent: out };
       }
     );
-    console.info('MCP: registered tool: GetElementDetails');
+    //console.info('MCP: registered tool: GetElementDetails');
     logger.log('info', 'mcp.tool.register', { tool: 'GetElementDetails', highLevel: true });
 
     sdkServer = server;

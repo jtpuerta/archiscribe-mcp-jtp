@@ -198,7 +198,7 @@ async function main() {
   });
 
   server.listen(Number(port), () => {
-    console.log(`Server listening on port ${port}`);
+    //console.log(`Server listening on port ${port}`);
     logger.log('info', 'server.listen', { port });
     logger.log('info', 'server.auth.mode', {
       mode: process.env.MCP_AUTH_MODE || 'auto',
