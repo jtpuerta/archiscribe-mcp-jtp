@@ -1,9 +1,10 @@
 node_modules/
-config/settings.json
 data/
+dist/
+config/settings.json
+logs/
 .env
 /.vscode/
 *.archimate
 *.archimate.bak
-/logs/
 /scripts/
