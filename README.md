@@ -56,33 +56,6 @@ Uses `ts-node-dev` to execute TypeScript directly and restart on changes.
 
 ---
 
-## Verifying the MCP Server
-
-### Check Log File content at startup
-
-On successful startup, you should see in the log file:
-
-Rq: no logs on console to enable Stdio MCP access (? / TODO)
-
-```
-MCP: initialising server
-MCP: registered tool: SearchViews
-MCP: registered tool: GetViewDetails
-MCP: registered tool: SearchElements
-MCP: registered tool: GetElementDetails
-Server listening on port 3030
-```
-
-### Check SearchViews from curl
-```
-curl -X POST http://localhost:3030/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"SearchViews","arguments":{}}}'
-```
-
----
-
 ## Available Scripts
 
 | Script             | Description                                      |
@@ -94,9 +67,28 @@ curl -X POST http://localhost:3030/mcp \
 
 ---
 
+## Verifying the MCP Server
+
+### Check Log File content at startup
+
+### Check SearchViews from curl
+```
+curl -X POST http://localhost:3030/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"SearchViews","arguments":{}}}'
+```
+
+---
+
 ## MCP Client Configuration
 
 Supports MCP over HTTP at the `/mcp` endpoint for integration with MCP clients.
+or 
+Supports MCP over STDIO for local integration 
+
+Rq: Un point d'attention : le logger d'archiscribe est configuré en "logTarget": "file" dans ton settings.json, ce qui est parfait — aucun log ne viendra polluer stdout et corrompre le protocole STDIO.
+Si jamais tu changes logTarget en "console" un jour, il faudra s'assurer que les logs vont sur stderr et non stdout, sinon Cline (comme tout client STDIO) verra des données corrompues.
 
 ### MCP Inspector 
 
