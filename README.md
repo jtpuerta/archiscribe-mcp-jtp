@@ -108,7 +108,7 @@ Run the MCP Inspector form archiscribe-mcp project root
 - the MCP Server must be launch (npm start or npm run dev)
 - in the MCP Inspector, use "Proxy" Connexion Type when both MCP Server and MCP Inspector are on the same host
 
-=> If usage of Transport Type = "STDIO" (MCP Server and MCP Inspector aron the same host), then
+=> If usage of Transport Type = "STDIO" (MCP Server and MCP Inspector are on the same host), then
 - the MCP Server must not be launch
 - in the MCP Inspector, use Command "node" and set the path to stdio.ts file in the Arguments (set the full path to stdio.ts with slash forward (/) and not anti slash (\)) 
 

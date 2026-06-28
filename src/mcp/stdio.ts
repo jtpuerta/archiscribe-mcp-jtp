@@ -14,6 +14,6 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('Failed to start STDIO server', err);
+  console.error('Failed to start STDIO transport', err);
   process.exit(1);
 });
